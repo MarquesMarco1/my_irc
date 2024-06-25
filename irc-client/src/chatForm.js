@@ -66,7 +66,7 @@ const ChatForm = ({ username, channel }) => {
         <button id="toggle-btn" onClick={handleToggle}>Déconnecter</button>
       </form>
       <div id="members">
-        <h3>Membres</h3>
+      <span>Membres: <span>{username}</span></span>
         <ul id="membersList">
           {members.map((member, index) => (
             <li key={index}>{member}</li>
