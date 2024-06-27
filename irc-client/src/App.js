@@ -12,11 +12,12 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
 
-  const handleLogin = (username, channel) => {
+  const handleLogin = (username) => {
     setUsername(username);
-    setChannel(channel);
     setIsLoggedIn(true);
   };
+
+  
 
   return (
     <div className="App">
