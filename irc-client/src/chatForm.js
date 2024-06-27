@@ -1,29 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:3000');
-
 const ChatForm = ({ username, channel }) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [members, setMembers] = useState([]);
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    socket.emit('join channel', { username, channel });
+    const newSocket = io('http://localhost:3000');
+    setSocket(newSocket);
 
-    socket.on('chat message', (msg) => {
+    newSocket.emit('join channel', { username, channel });
+
+    newSocket.on('chat message', (msg) => {
       if (msg.channel === channel) {
         setMessages((prevMessages) => [...prevMessages, msg]);
       }
     });
 
-    socket.on('update members', (members) => {
+    newSocket.on('update members', (members) => {
       setMembers(members);
     });
 
     return () => {
-      socket.emit('leave channel', { username, channel });
-      socket.off();
+      newSocket.emit('leave channel', { username, channel });
+      newSocket.off('chat message');
+      newSocket.off('update members');
+      newSocket.disconnect();
     };
   }, [channel, username]);
 
@@ -37,27 +41,24 @@ const ChatForm = ({ username, channel }) => {
 
   const handleToggle = (e) => {
     e.preventDefault();
-    if (socket.connected) {
-      socket.disconnect();
-    } else {
-      socket.connect();
-      socket.emit('join channel', { username, channel });
+    if (socket) {
+      if (socket.connected) {
+        socket.disconnect();
+      } else {
+        socket.connect();
+        socket.emit('join channel', { username, channel });
+      }
     }
   };
 
   return (
     <div>
       <div id="channel">
-        <span>Utlisateur: <span>{username}</span></span>
+        <span>Utilisateur: <span>{username}</span></span>
       </div>
       <div id="channel">
         <span>Channel: <span id="currentChannel">{channel}</span></span>
       </div>
-      <ul id="messages">
-        {messages.map((msg, index) => (
-          <li key={index}>{msg.username}: {msg.message}</li>
-        ))}
-      </ul>
       <form id="form" onSubmit={handleSubmit}>
         <input 
           id="input" 
@@ -66,16 +67,23 @@ const ChatForm = ({ username, channel }) => {
           onChange={(e) => setMessage(e.target.value)}
         />
         <button type="submit">Envoyer</button>
-        <button id="toggle-btn" onClick={handleToggle}>Déconnecter</button>
+        <button id="toggle-btn" onClick={handleToggle}>
+          {socket && socket.connected ? 'Déconnecter' : 'Reconnecter'}
+        </button>
       </form>
       <div id="members">
-      <span>Membres: </span>
+        <span>Membres: </span>
         <ul id="membersList">
-          {members.map((member, index) => (
+          {members.filter(member => member !== username).map((member, index) => (
             <li key={index}>{member}</li>
           ))}
         </ul>
       </div>
+      <ul id="messages">
+        {messages.map((msg, index) => (
+          <li key={index}>{msg.username}: {msg.message}</li>
+        ))}
+      </ul>
     </div>
   );
 };

@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import LoginForm from './loginForm';
 import ChatForm from './chatForm';
 import './App.css';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:3000');
 
 function App() {
   const [username, setUsername] = useState('');
   const [channel, setChannel] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
 
   const handleLogin = (username, channel) => {
     setUsername(username);
