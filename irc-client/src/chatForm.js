@@ -48,6 +48,9 @@ const ChatForm = ({ username, channel }) => {
   return (
     <div>
       <div id="channel">
+        <span>Utlisateur: <span>{username}</span></span>
+      </div>
+      <div id="channel">
         <span>Channel: <span id="currentChannel">{channel}</span></span>
       </div>
       <ul id="messages">
@@ -66,7 +69,7 @@ const ChatForm = ({ username, channel }) => {
         <button id="toggle-btn" onClick={handleToggle}>Déconnecter</button>
       </form>
       <div id="members">
-      <span>Membres: <span>{username}</span></span>
+      <span>Membres: </span>
         <ul id="membersList">
           {members.map((member, index) => (
             <li key={index}>{member}</li>

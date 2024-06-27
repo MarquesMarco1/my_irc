@@ -1,53 +1,53 @@
 const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+const { createServer } = require('node:http');
+const { Server } = require('socket.io');
+const { join } = require('node:path');
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.send('Welcome to the IRC server');
+const server = createServer(app);
+const io = new Server(server, {
+    connectionStateRecovery: {},
+    cors: {
+        origin: "http://localhost:3001",
+        methods: ['GET', 'POST'],
+    }
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-const channels = {};
+const channelMembers = {};
 
 io.on('connection', (socket) => {
-  console.log('New user connected');
+    console.log('Un utilisateur s\'est connecté');
 
-  socket.on('joinChannel', (channel) => {
-    socket.join(channel);
-    if (!channels[channel]) {
-      channels[channel] = [];
-    }
-    channels[channel].push(socket.id);
-    io.to(channel).emit('message', `User ${socket.id} joined channel ${channel}`);
-  });
+    socket.on('join channel', ({ username, channel }) => {
+        socket.join(channel);
+        socket.username = username;
+        socket.channel = channel;
 
-  socket.on('leaveChannel', (channel) => {
-    socket.leave(channel);
-    if (channels[channel]) {
-      channels[channel] = channels[channel].filter(id => id !== socket.id);
-      io.to(channel).emit('message', `User ${socket.id} left channel ${channel}`);
-    }
-  });
+        if (!channelMembers[channel]) {
+            channelMembers[channel] = [];
+        }
+        channelMembers[channel].push(username);
 
-  socket.on('message', ({ channel, message }) => {
-    io.to(channel).emit('message', message);
-  });
+        io.to(channel).emit('update members', channelMembers[channel]);
 
-  socket.on('disconnect', () => {
-    console.log('User disconnected');
-    for (const channel in channels) {
-      channels[channel] = channels[channel].filter(id => id !== socket.id);
-      io.to(channel).emit('message', `User ${socket.id} disconnected`);
-    }
-  });
+        console.log(`${username} a rejoint le channel ${channel}`);
+    });
+
+    socket.on('disconnect', () => {
+        const { username, channel } = socket;
+        if (channelMembers[channel]) {
+            channelMembers[channel] = channelMembers[channel].filter(member => member !== username);
+            io.to(channel).emit('update members', channelMembers[channel]);
+        }
+        console.log(`${username} a quitté le channel ${channel}`);
+    });
+
+    socket.on('chat message', (msg) => {
+        console.log(`${msg.username}: ${msg.message} [Channel: ${msg.channel}]`);
+        io.to(msg.channel).emit('chat message', msg);
+    });
 });
 
+server.listen(3000, () => {
+  console.log('Serveur démarré sur http://localhost:3000');
+});
